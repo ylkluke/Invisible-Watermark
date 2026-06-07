@@ -1,0 +1,158 @@
+# Configuration for the end-to-end invisible watermark model.
+#
+# Notes
+# - CLI flags override values here.
+# - Use "" to mean "not set".
+# - Cover images are loaded as RGB tensors.
+# - The watermark template is converted to YCbCr; only its Y channel is encoded/recovered.
+# - Template Cb/Cr channels are reused only when saving RGB visualizations of recovered watermarks.
+
+[paths]
+outputs_dir = "outputs"
+clean_outputs = true
+
+[edge_wm_noise_train]
+# experiments/edge_wm_noise_train.py
+input_dir = "inputs/div2k/DIV2K_train_HR"
+auto_extract = true
+extract_dir = ""
+wm_template = "assets/watermarks/luke.png"
+outdir = ""                   # if empty: {outputs_dir}/edge_wm_noise/<timestamp>/
+resume = ""                   # optional: path to ckpt_step_*.pt OR a run folder
+size = 256
+steps = 2000
+batch_size = 4
+num_workers = 2
+recursive = true
+max_images = 0
+
+augment = true
+hflip = true
+crop_scale_min = 0.70
+crop_scale_max = 1.00
+crop_ratio_min = 0.85
+crop_ratio_max = 1.15
+
+lr = 0.0001
+device = "cpu"
+seed = 0
+
+# Imperceptibility terms for the RGB container image.
+# Increase lambda_embed/lambda_hvs if the container still shows visible embedding artifacts.
+lambda_embed = 20.0
+lambda_hvs = 20.0
+lambda_payload = 1.0
+lambda_wm = 1.0
+lambda_noise = 0.5
+alpha_ssim = 0.5
+payload_target_std = 0.35
+
+base_channels = 32
+unet_depth = 4
+residual_strength = 0.02
+wm_enc_blocks = 4
+wm_dec_blocks = 4
+payload_dec_blocks = 6
+norm = "bn"
+attention = "none"            # none | cbam
+attention_reduction = 16
+attention_spatial_kernel = 7  # 3 | 7
+
+progress = true
+progress_every = 10
+print_json = false
+metrics_jsonl = "metrics.jsonl"
+
+log_every = 50
+save_every = 200
+clean_outputs = false
+
+# Optional validation set evaluated during training.
+val_dir = ""                  # e.g. "inputs/chaos_batch"
+val_recursive = true
+val_limit = 0
+val_every = 0                 # 0 disables; e.g. 200 runs every 200 steps
+val_save_samples = 4
+val_save_amplify = 20.0
+val_jsonl = "val_metrics.jsonl"
+
+# Robustness training: decode from attacked containers.
+# The attack module can apply crop, mosaic, JPEG, resize and blur.
+robust = false
+lambda_attack = 1.0
+attack_prob = 0.7
+attack_crop_keep = 0.7
+attack_crop_prob = 0.5
+attack_mosaic_prob = 0.3
+attack_mosaic_min_block = 4
+attack_mosaic_max_block = 16
+attack_jpeg_prob = 0.3
+attack_jpeg_quality_min = 30
+attack_jpeg_quality_max = 95
+attack_jpeg_mode = "approx"   # approx | pil
+attack_resize_prob = 0.3
+attack_resize_min_scale = 0.7
+attack_resize_max_scale = 1.3
+attack_blur_prob = 0.3
+attack_blur_kernel = 5
+attack_blur_sigma_max = 1.2
+
+[edge_wm_noise_infer]
+# experiments/edge_wm_noise_infer.py
+input = ""
+input_dir = ""
+wm_template = "assets/watermarks/luke.png"
+ckpt = ""                     # can also be "latest" or a run folder
+outdir = ""                   # if empty: {outputs_dir}/edge_wm_noise_infer/<timestamp>/
+size = 256
+device = "cpu"
+clean_outputs = false
+
+# Optional inference visualization attack.
+# When enabled, inference applies a deterministic full attack chain:
+# crop + resize + mosaic + blur + JPEG, then decodes the attacked container.
+attack = false
+attack_crop_keep = 0.7
+attack_mosaic_block = 8
+attack_jpeg_quality = 50
+attack_jpeg_mode = "pil"      # approx | pil
+attack_resize_scale = 0.8
+attack_blur_sigma = 1.0
+
+[edge_wm_noise_test]
+# experiments/edge_wm_noise_test.py
+input = ""
+input_dir = "inputs/chaos_batch"
+recursive = true
+limit = 0
+seed = 0
+wm_template = "assets/watermarks/luke.png"
+ckpt = ""                     # can also be "latest" or a run folder
+outdir = ""                   # if empty: {outputs_dir}/edge_wm_noise_test/<timestamp>/
+size = 256
+device = "cpu"
+save_samples = 8
+save_amplify = 20.0
+save_all = false              # if true: save outputs for every input image
+clean_outputs = false
+
+# Optional robustness evaluation on the test set.
+# attack_mode="random" uses probabilities below; attack_mode="all" forces every attack on.
+attack = false
+attack_mode = "random"        # random | all
+attack_prob = 0.7
+attack_crop_keep = 0.7
+attack_crop_prob = 0.5
+attack_mosaic_prob = 0.3
+attack_mosaic_min_block = 4
+attack_mosaic_max_block = 16
+attack_jpeg_prob = 0.3
+attack_jpeg_quality_min = 30
+attack_jpeg_quality_max = 95
+attack_jpeg_mode = "pil"      # approx | pil
+attack_resize_prob = 0.3
+attack_resize_min_scale = 0.7
+attack_resize_max_scale = 1.3
+attack_blur_prob = 0.3
+attack_blur_kernel = 5
+attack_blur_sigma_max = 1.2
